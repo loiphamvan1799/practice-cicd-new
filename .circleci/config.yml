@@ -64,13 +64,13 @@ jobs:
            - textfile.txt 
   
   promote_to_production:
-   docker:
+    docker:
      - image: amazon/aws-cli
-   steps:
-     - checkout
-     - run:
-         name: Execute cloudfront.yml
-         command: |
+    steps:
+      - checkout
+      - run:
+          name: Execute cloudfront.yml
+          command: |
            aws cloudformation deploy \
            --template-file cloudfront.yml \
            --stack-name production-distro \
