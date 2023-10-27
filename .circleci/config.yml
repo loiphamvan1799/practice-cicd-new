@@ -1,24 +1,107 @@
 version: 2.1
 # Use a package of configuration called an orb.
 orbs:
+commands:
+  destroy_environment:
+    steps:
+      - run:
+          name: Destroy environment
+          # ${CIRCLE_WORKFLOW_ID} is a Built-in environment variable 
+          # ${CIRCLE_WORKFLOW_ID:0:5} takes the first 5 chars of the variable CIRCLE_CI_WORKFLOW_ID 
+          when: on_fail
+          command: |
+            aws cloudformation delete-stack --stack-name myStack-${CIRCLE_WORKFLOW_ID:0:5}
+
 jobs:
- configure_infrastructure: 
+ create_infrastructure: 
     docker:
-      - image: python:3.7-alpine3.11
+      - image: amazon/aws-cli
     steps:
       - checkout
-      - add_ssh_keys:
-          fingerprints: ["c9:83:3a:4f:9f:73:b7:2b:b0:94:70:61:fc:98:ae:ea"] 
       - run:
-          name: Install Ansible
+          name: Create Cloudformation Stack
           command: |
-            apk add --update ansible
+            aws cloudformation deploy \
+              --template-file template.yml \
+              --stack-name myStack-${CIRCLE_WORKFLOW_ID:0:5} \
+              --region us-east-1
+      # Fail the job intentionally to simulate an error.
+      # Uncomment the line below if you want to fail the current step
+      # - run: return 1
+      - destroy_environment
+
+  smoke_test:
+    docker:
+      - image: alpine:latest
+    steps:
+      - run: apk add --update curl
       - run:
-          name: Run Playbook and Configure server
+          name: smoke test
           command: |
-            ansible-playbook -i inventory.txt main.yml
+            URL="https://blog.udacity.com/"
+            # Test if website exists
+            if curl -s --head ${URL} 
+            then
+              return 0
+            else
+              return 1
+            fi
+      - destroy_environment  
+
+  create_and_deploy_front_end:
+    docker:
+     - image: amazon/aws-cli
+    steps:
+      - checkout
+      - run:
+         name: Execute bucket.yml - Create Cloudformation Stack
+         command: |
+           aws cloudformation deploy \
+           --template-file bucket.yml \
+           --stack-name stack-create-bucket-${CIRCLE_WORKFLOW_ID:0:7} \
+           --parameter-overrides MyBucketName="mybucket-${CIRCLE_WORKFLOW_ID:0:7}"
+     # Uncomment the step below if yoou wish to upload all contents of the current directory to the S3 bucket
+      - run: aws s3 sync . s3://mybucket-${CIRCLE_WORKFLOW_ID:0:7} --delete
+
+  get_last_deployment_id:
+   docker:
+     - image: amazon/aws-cli
+   steps:
+     - checkout
+     - run: yum install -y tar gzip
+     - run:
+         name: Fetch and save the old pipeline ID (bucket name) responsible for the last release.
+         command: |
+           aws cloudformation \
+           list-exports --query "Exports[?Name==\`PipelineID\`].Value" \
+           --no-paginate --output text > ~/textfile.txt
+     - persist_to_workspace:
+         root: ~/
+         paths: 
+           - textfile.txt 
+
+  promote_to_production:
+   docker:
+     - image: amazon/aws-cli
+   steps:
+     - checkout
+     - run:
+         name: Execute cloudfront.yml
+         command: |
+           aws cloudformation deploy \
+           --template-file cloudfront.yml \
+           --stack-name production-distro \
+           --parameter-overrides PipelineID="mybucket-${CIRCLE_WORKFLOW_ID:0:7}"
 
 workflows:
   myWorkflow:
     jobs:
-      - configure_infrastructure
+      - create_and_deploy_front_end
+      - promote_to_production:
+          requires: 
+      - create_and_deploy_front_end
+      - get_last_deployment_id
+      - clean_up_old_front_end:
+          requires:
+      - get_last_deployment_id
+      - promote_to_production
