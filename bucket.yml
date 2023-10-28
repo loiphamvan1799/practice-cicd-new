@@ -15,7 +15,12 @@ Resources:
         ErrorDocument: error.html
       OwnershipControls:
         Rules:
-          - ObjectOwnership: ObjectWriter 
+          - ObjectOwnership: ObjectWriter
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
 
   WebsiteBucketPolicy:
     Type: AWS::S3::BucketPolicy
