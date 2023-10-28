@@ -15,7 +15,7 @@ Resources:
         ErrorDocument: error.html
       OwnershipControls:
         Rules:
-          - ObjectOwnership: BucketOwnerPreferred
+          - ObjectOwnership: ObjectWriter 
 
   WebsiteBucketPolicy:
     Type: AWS::S3::BucketPolicy
