@@ -13,7 +13,6 @@ Resources:
       WebsiteConfiguration:
         IndexDocument: index.html
         ErrorDocument: error.html
-
   WebsiteBucketPolicy:
     Type: AWS::S3::BucketPolicy
     Properties:
