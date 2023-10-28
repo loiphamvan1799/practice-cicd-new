@@ -13,14 +13,14 @@ Resources:
       WebsiteConfiguration:
         IndexDocument: index.html
         ErrorDocument: error.html
-      OwnershipControls:
-        Rules:
-          - ObjectOwnership: ObjectWriter
       PublicAccessBlockConfiguration:
         BlockPublicAcls: false
         BlockPublicPolicy: false
         IgnorePublicAcls: false
         RestrictPublicBuckets: false
+    OwnershipControls:
+      Rules:
+        - ObjectOwnership: ObjectWriter
 
   WebsiteBucketPolicy:
     Type: AWS::S3::BucketPolicy
