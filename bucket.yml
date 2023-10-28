@@ -18,9 +18,9 @@ Resources:
         BlockPublicPolicy: false
         IgnorePublicAcls: false
         RestrictPublicBuckets: false
-    OwnershipControls:
-      Rules:
-        - ObjectOwnership: ObjectWriter
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: ObjectWriter
 
   WebsiteBucketPolicy:
     Type: AWS::S3::BucketPolicy
